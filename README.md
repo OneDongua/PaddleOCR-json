@@ -1,3 +1,7 @@
+> [!NOTE]
+> **本仓库修改内容见 [修改说明.md](/docs/修改说明.md)**  
+> 以下是原仓库 README
+
 #### 离线OCR组件 系列项目：
 - **PaddleOCR-json**
 - [RapidOCR-json](https://github.com/hiroi-sora/RapidOCR-json)
