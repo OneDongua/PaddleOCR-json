@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // ∞Ê±æ–≈œ¢
-#define PROJECT_VER "v1.4.1"
+#define PROJECT_VER "v1.4.1-ext"
 #define PROJECT_NAME "PaddleOCR-json " PROJECT_VER
 
 #include <opencv2/core.hpp>
