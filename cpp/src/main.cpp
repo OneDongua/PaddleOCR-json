@@ -12,120 +12,111 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// ÁâàÊú¨‰ø°ÊÅØ
+// ∞Ê±æ–≈œ¢
 #define PROJECT_VER "v1.4.1"
 #define PROJECT_NAME "PaddleOCR-json " PROJECT_VER
 
-#include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgproc.hpp"
+#include <opencv2/core.hpp>
+
+#include <opencv2/imgcodecs.hpp>
+
+#include <include/args.h>
+#include <include/paddlestructure.h>
+
 #include <iostream>
 #include <vector>
 
-#include <include/args.h>
 #include <include/paddleocr.h>
-#include <include/paddlestructure.h>
 #include <include/task.h>
 
 using namespace PaddleOCR;
 
-void structure(std::vector<cv::String> &cv_all_img_names)
-{
-    PaddleOCR::PaddleStructure engine = PaddleOCR::PaddleStructure();
+void structure(std::vector<cv::String>& cv_all_img_names) {
+	PaddleOCR::PaddleStructure engine;
 
-    if (FLAGS_benchmark)
-    {
-        engine.reset_timer();
-    }
+	if (FLAGS_benchmark) {
+		engine.reset_timer();
+	}
 
-    for (int i = 0; i < cv_all_img_names.size(); i++)
-    {
-        std::cout << "predict img: " << cv_all_img_names[i] << std::endl;
-        cv::Mat img = cv::imread(cv_all_img_names[i], cv::IMREAD_COLOR);
-        if (!img.data)
-        {
-            std::cerr << "[ERROR] image read failed! image path: "
-                      << cv_all_img_names[i] << std::endl;
-            continue;
-        }
+	for (int i = 0; i < cv_all_img_names.size(); ++i) {
+		std::cout << "predict img: " << cv_all_img_names[i] << std::endl;
+		cv::Mat img = cv::imread(cv_all_img_names[i], cv::IMREAD_COLOR);
+		if (!img.data) {
+			std::cerr << "[ERROR] image read failed! image path: "
+				<< cv_all_img_names[i] << std::endl;
+			continue;
+		}
 
-        std::vector<StructurePredictResult> structure_results = engine.structure(
-            img, FLAGS_layout, FLAGS_table, FLAGS_det && FLAGS_rec);
+		std::vector<StructurePredictResult> structure_results = engine.structure(
+			img, FLAGS_layout, FLAGS_table, FLAGS_det && FLAGS_rec);
 
-        for (int j = 0; j < structure_results.size(); j++)
-        {
-            std::cout << j << "\ttype: " << structure_results[j].type
-                      << ", region: [";
-            std::cout << structure_results[j].box[0] << ","
-                      << structure_results[j].box[1] << ","
-                      << structure_results[j].box[2] << ","
-                      << structure_results[j].box[3] << "], score: ";
-            std::cout << structure_results[j].confidence << ", res: ";
+		for (size_t j = 0; j < structure_results.size(); ++j) {
+			std::cout << j << "\ttype: " << structure_results[j].type
+				<< ", region: [";
+			std::cout << structure_results[j].box[0] << ","
+				<< structure_results[j].box[1] << ","
+				<< structure_results[j].box[2] << ","
+				<< structure_results[j].box[3] << "], score: ";
+			std::cout << structure_results[j].confidence << ", res: ";
 
-            if (structure_results[j].type == "table")
-            {
-                std::cout << structure_results[j].html << std::endl;
-                if (structure_results[j].cell_box.size() > 0 && FLAGS_visualize)
-                {
-                    std::string file_name = Utility::basename(cv_all_img_names[i]);
+			if (structure_results[j].type == "table") {
+				std::cout << structure_results[j].html << std::endl;
+				if (structure_results[j].cell_box.size() > 0 && FLAGS_visualize) {
+					std::string file_name = Utility::basename(cv_all_img_names[i]);
 
-                    Utility::VisualizeBboxes(img, structure_results[j],
-                                             FLAGS_output + "/" + std::to_string(j) +
-                                                 "_" + file_name);
-                }
-            }
-            else
-            {
-                std::cout << "count of ocr result is : "
-                          << structure_results[j].text_res.size() << std::endl;
-                if (structure_results[j].text_res.size() > 0)
-                {
-                    std::cout << "********** print ocr result "
-                              << "**********" << std::endl;
-                    Utility::print_result(structure_results[j].text_res);
-                    std::cout << "********** end print ocr result "
-                              << "**********" << std::endl;
-                }
-            }
-        }
-    }
-    if (FLAGS_benchmark)
-    {
-        engine.benchmark_log(cv_all_img_names.size());
-    }
+					Utility::VisualizeBboxes(img, structure_results[j],
+						FLAGS_output + "/" + std::to_string(j) +
+						"_" + file_name);
+				}
+			}
+			else {
+				std::cout << "count of ocr result is : "
+					<< structure_results[j].text_res.size() << std::endl;
+				if (structure_results[j].text_res.size() > 0) {
+					std::cout << "********** print ocr result "
+						<< "**********" << std::endl;
+					Utility::print_result(structure_results[j].text_res);
+					std::cout << "********** end print ocr result "
+						<< "**********" << std::endl;
+				}
+			}
+		}
+	}
+	if (FLAGS_benchmark) {
+		engine.benchmark_log(cv_all_img_names.size());
+	}
 }
 
-int main(int argc, char **argv)
-{
-    std::cout << PROJECT_NAME << std::endl; // ÁâàÊú¨ÊèêÁ§∫
-    // ËÆæÁΩÆgflagsÂπ∂ËØªÂèñÂëΩ‰ª§Ë°å
-    google::SetUsageMessage("PaddleOCR-json [FLAG1=ARG1] [FLAG2=ARG2]");
-    google::SetVersionString(PROJECT_VER);
-    google::ParseCommandLineFlags(&argc, &argv, true);
-    // ËØªÂèñÈÖçÁΩÆÊñá‰ª∂
-    std::string configMsg = read_config();
-    if (!configMsg.empty())
-    {
-        std::cerr << configMsg << std::endl;
-    }
-    // Ê£ÄÊü•ÂèÇÊï∞ÂêàÊ≥ïÊÄß
-    std::string checkMsg = check_flags();
-    if (!checkMsg.empty())
-    {
-        std::cerr << "[ERROR] " << checkMsg << std::endl;
-        return 1;
-    }
+int main(int argc, char** argv) {
+	std::cout << PROJECT_NAME << std::endl; // ∞Ê±æÃ· æ
+	// …Ë÷√gflags≤¢∂¡»°√¸¡Ó––
+	google::SetUsageMessage("PaddleOCR-json [FLAG1=ARG1] [FLAG2=ARG2]");
+	google::SetVersionString(PROJECT_VER);
+	google::ParseCommandLineFlags(&argc, &argv, true);
+	// ∂¡»°≈‰÷√Œƒº˛
+	std::string configMsg = read_config();
+	if (!configMsg.empty())
+	{
+		std::cerr << configMsg << std::endl;
+	}
+	// ºÏ≤È≤Œ ˝∫œ∑®–‘
+	std::string checkMsg = check_flags();
+	if (!checkMsg.empty())
+	{
+		std::cerr << "[ERROR] " << checkMsg << std::endl;
+		return 1;
+	}
 
-    // ÂêØÂä®‰ªªÂä°
-    Task task = Task();
-    if (FLAGS_type == "ocr")
-    { // OCRÂõæÁâáÊ®°Âºè
-        return task.ocr();
-    }
-    // TODO: ÂõæË°®ËØÜÂà´Ê®°Âºè
-    else if (FLAGS_type == "structure")
-    {
-        std::cerr << "[ERROR] structure not support. " << std::endl;
-        // structure(cv_all_img_names);
-    }
+	// ∆Ù∂Ø»ŒŒÒ
+	Task task = Task();
+	if (FLAGS_type == "ocr")
+	{ // OCRÕº∆¨ƒ£ Ω
+		return task.ocr();
+	}
+	// TODO: Õº±Ì ∂±ƒ£ Ω
+	else if (FLAGS_type == "structure")
+	{
+		std::cerr << "[ERROR] structure not support. " << std::endl;
+		// structure(cv_all_img_names);
+	}
 }

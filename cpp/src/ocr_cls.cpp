@@ -13,19 +13,23 @@
 // limitations under the License.
 
 #include <include/ocr_cls.h>
+#include <paddle_inference_api.h>
+
+#include <chrono>
+#include <numeric>
 
 namespace PaddleOCR {
 
-void Classifier::Run(std::vector<cv::Mat> img_list,
+void Classifier::Run(const std::vector<cv::Mat> &img_list,
                      std::vector<int> &cls_labels,
                      std::vector<float> &cls_scores,
-                     std::vector<double> &times) {
+                     std::vector<double> &times) noexcept {
   std::chrono::duration<float> preprocess_diff =
-      std::chrono::steady_clock::now() - std::chrono::steady_clock::now();
+      std::chrono::duration<float>::zero();
   std::chrono::duration<float> inference_diff =
-      std::chrono::steady_clock::now() - std::chrono::steady_clock::now();
+      std::chrono::duration<float>::zero();
   std::chrono::duration<float> postprocess_diff =
-      std::chrono::steady_clock::now() - std::chrono::steady_clock::now();
+      std::chrono::duration<float>::zero();
 
   int img_num = img_list.size();
   std::vector<int> cls_image_shape = {3, 48, 192};
@@ -36,21 +40,21 @@ void Classifier::Run(std::vector<cv::Mat> img_list,
     int batch_num = end_img_no - beg_img_no;
     // preprocess
     std::vector<cv::Mat> norm_img_batch;
-    for (int ino = beg_img_no; ino < end_img_no; ino++) {
+    for (int ino = beg_img_no; ino < end_img_no; ++ino) {
       cv::Mat srcimg;
       img_list[ino].copyTo(srcimg);
       cv::Mat resize_img;
       this->resize_op_.Run(srcimg, resize_img, this->use_tensorrt_,
                            cls_image_shape);
 
-      this->normalize_op_.Run(&resize_img, this->mean_, this->scale_,
+      this->normalize_op_.Run(resize_img, this->mean_, this->scale_,
                               this->is_scale_);
       if (resize_img.cols < cls_image_shape[2]) {
         cv::copyMakeBorder(resize_img, resize_img, 0, 0, 0,
                            cls_image_shape[2] - resize_img.cols,
                            cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
       }
-      norm_img_batch.push_back(resize_img);
+      norm_img_batch.emplace_back(std::move(resize_img));
     }
     std::vector<float> input(batch_num * cls_image_shape[0] *
                                  cls_image_shape[1] * cls_image_shape[2],
@@ -83,7 +87,7 @@ void Classifier::Run(std::vector<cv::Mat> img_list,
 
     // postprocess
     auto postprocess_start = std::chrono::steady_clock::now();
-    for (int batch_idx = 0; batch_idx < predict_shape[0]; batch_idx++) {
+    for (int batch_idx = 0; batch_idx < predict_shape[0]; ++batch_idx) {
       int label = int(
           Utility::argmax(&predict_batch[batch_idx * predict_shape[1]],
                           &predict_batch[(batch_idx + 1) * predict_shape[1]]));
@@ -96,16 +100,34 @@ void Classifier::Run(std::vector<cv::Mat> img_list,
     auto postprocess_end = std::chrono::steady_clock::now();
     postprocess_diff += postprocess_end - postprocess_start;
   }
-  times.push_back(double(preprocess_diff.count() * 1000));
-  times.push_back(double(inference_diff.count() * 1000));
-  times.push_back(double(postprocess_diff.count() * 1000));
+  times.emplace_back(preprocess_diff.count() * 1000);
+  times.emplace_back(inference_diff.count() * 1000);
+  times.emplace_back(postprocess_diff.count() * 1000);
 }
 
-void Classifier::LoadModel(const std::string &model_dir) {
+void Classifier::LoadModel(const std::string &model_dir) noexcept {
   paddle_infer::Config config;
-  config.SetModel(model_dir + "/inference.pdmodel",
-                  model_dir + "/inference.pdiparams");
-
+  bool json_model = false;
+  std::string model_file_path, param_file_path;
+  std::vector<std::pair<std::string, std::string>> model_variants = {
+      {"/inference.json", "/inference.pdiparams"},
+      {"/model.json", "/model.pdiparams"},
+      {"/inference.pdmodel", "/inference.pdiparams"},
+      {"/model.pdmodel", "/model.pdiparams"}};
+  for (const auto &variant : model_variants) {
+    if (Utility::PathExists(model_dir + variant.first)) {
+      model_file_path = model_dir + variant.first;
+      param_file_path = model_dir + variant.second;
+      json_model = (variant.first.find(".json") != std::string::npos);
+      break;
+    }
+  }
+  if (model_file_path.empty()) {
+    std::cerr << "[ERROR] No valid model file found in " << model_dir
+              << std::endl;
+    exit(1);
+  }
+  config.SetModel(model_file_path, param_file_path);
   if (this->use_gpu_) {
     config.EnableUseGpu(this->gpu_mem_, this->gpu_id_);
     if (this->use_tensorrt_) {
@@ -127,8 +149,14 @@ void Classifier::LoadModel(const std::string &model_dir) {
     config.DisableGpu();
     if (this->use_mkldnn_) {
       config.EnableMKLDNN();
+    } else {
+      config.DisableMKLDNN();
     }
     config.SetCpuMathLibraryNumThreads(this->cpu_math_library_num_threads_);
+    if (json_model) {
+      config.EnableNewIR();
+      config.EnableNewExecutor();
+    }
   }
 
   // false for zero copy tensor

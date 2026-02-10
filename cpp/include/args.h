@@ -16,7 +16,7 @@
 
 #include <gflags/gflags.h>
 
-// å·¥ä½œæ¨¡å¼
+// ¹¤×÷Ä£Ê½
 DECLARE_string(image_path);
 DECLARE_int32(port);
 DECLARE_string(addr);
@@ -31,6 +31,7 @@ DECLARE_bool(enable_mkldnn);
 DECLARE_string(precision);
 DECLARE_bool(benchmark);
 DECLARE_string(output);
+DECLARE_string(image_dir);
 DECLARE_string(type);
 DECLARE_string(config_path);
 DECLARE_string(models_path);
@@ -74,7 +75,7 @@ DECLARE_bool(cls);
 DECLARE_bool(table);
 DECLARE_bool(layout);
 
-// è¯»å–é…ç½®æ–‡ä»¶
+// ¶ÁÈ¡ÅäÖÃÎÄ¼ş
 std::string read_config();
-// æ£€æµ‹å‚æ•°åˆæ³•æ€§
+// ¼ì²â²ÎÊıºÏ·¨ĞÔ
 std::string check_flags();

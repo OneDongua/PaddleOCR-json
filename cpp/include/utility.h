@@ -14,126 +14,112 @@
 
 #pragma once
 
-#include <chrono>
-#include <iomanip>
-#include <iostream>
-#include <ostream>
-#include <stdlib.h>
-#include <vector>
+#include <opencv2/imgproc.hpp>
 
-#include <algorithm>
-#include <cstring>
-#include <fstream>
-#include <numeric>
+namespace PaddleOCR {
 
-#include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgproc.hpp"
+struct OCRPredictResult {
+  std::vector<std::vector<int>> box;
+  std::string text;
+  float score = -1.0;
+  float cls_score;
+  int cls_label = -1;
+};
 
-namespace PaddleOCR
-{
+struct StructurePredictResult {
+  std::vector<float> box;
+  std::vector<std::vector<int>> cell_box;
+  std::string type;
+  std::vector<OCRPredictResult> text_res;
+  std::string html;
+  float html_score = -1;
+  float confidence;
+};
 
-    struct OCRPredictResult
-    {
-        std::vector<std::vector<int>> box;
-        std::string text;
-        float score = -1.0;
-        float cls_score;
-        int cls_label = -1;
-    };
+class Utility {
+public:
+  static std::vector<std::string> ReadDict(const std::string &path) noexcept;
 
-    struct StructurePredictResult
-    {
-        std::vector<float> box;
-        std::vector<std::vector<int>> cell_box;
-        std::string type;
-        std::vector<OCRPredictResult> text_res;
-        std::string html;
-        float html_score = -1;
-        float confidence;
-    };
+  static void VisualizeBboxes(const cv::Mat &srcimg,
+                              const std::vector<OCRPredictResult> &ocr_result,
+                              const std::string &save_path) noexcept;
 
-    class Utility
-    {
-    public:
-        static std::vector<std::string> ReadDict(const std::string &path);
+  static void VisualizeBboxes(const cv::Mat &srcimg,
+                              const StructurePredictResult &structure_result,
+                              const std::string &save_path) noexcept;
 
-        static void VisualizeBboxes(const cv::Mat &srcimg,
-                                    const std::vector<OCRPredictResult> &ocr_result,
-                                    const std::string &save_path);
+  template <class ForwardIterator>
+  inline static size_t argmax(ForwardIterator first,
+                              ForwardIterator last) noexcept {
+    return std::distance(first, std::max_element(first, last));
+  }
 
-        static void VisualizeBboxes(const cv::Mat &srcimg,
-                                    const StructurePredictResult &structure_result,
-                                    const std::string &save_path);
+  static void GetAllFiles(const char *dir_name,
+                          std::vector<std::string> &all_inputs) noexcept;
 
-        template <class ForwardIterator>
-        inline static size_t argmax(ForwardIterator first, ForwardIterator last)
-        {
-            return std::distance(first, std::max_element(first, last));
-        }
+  static cv::Mat
+  GetRotateCropImage(const cv::Mat &srcimage,
+                     const std::vector<std::vector<int>> &box) noexcept;
 
-        static void GetAllFiles(const char *dir_name,
-                                std::vector<std::string> &all_inputs);
+  static std::vector<size_t> argsort(const std::vector<float> &array) noexcept;
 
-        static cv::Mat GetRotateCropImage(const cv::Mat &srcimage,
-                                          std::vector<std::vector<int>> box);
+  static inline void trim(std::string& str);
 
-        static std::vector<int> argsort(const std::vector<float> &array);
+  static inline std::string trim_copy(std::string str);
 
-        static inline void ltrim(std::string &str);
-        static inline void rtrim(std::string &str);
-        static inline void trim(std::string &str);
-        static inline std::string ltrim_copy(std::string str);
-        static inline std::string rtrim_copy(std::string str);
-        static inline std::string trim_copy(std::string str);
+  static inline bool str_starts_with(const std::string& str, const std::string& pattern)
+  {
+      // https://stackoverflow.com/a/40441240
+      return (str.rfind(pattern, 0) == 0);
+  }
 
-        static inline bool str_starts_with(const std::string& str, const std::string& pattern)
-        {
-            // https://stackoverflow.com/a/40441240
-            return (str.rfind(pattern, 0) == 0);
-        }
+  static std::string basename(const std::string &filename) noexcept;
 
-        static std::string basename(const std::string &filename);
+  static std::string pathjoin(const std::string& parent, const std::string& child);
 
-        static std::string pathjoin(const std::string& parent, const std::string& child);
+  static bool PathExists(const char *path) noexcept;
+  static inline bool PathExists(const std::string &path) noexcept {
+    return PathExists(path.c_str());
+  }
 
-        static bool PathExists(const std::string &path);
+  static void CreateDir(const char *path) noexcept;
+  static inline void CreateDir(const std::string &path) noexcept {
+    CreateDir(path.c_str());
+  }
 
-        static void CreateDir(const std::string &path);
+  static void
+  print_result(const std::vector<OCRPredictResult> &ocr_result) noexcept;
 
-        static void print_result(const std::vector<OCRPredictResult> &ocr_result);
+  static cv::Mat crop_image(const cv::Mat &img,
+                            const std::vector<int> &area) noexcept;
+  static cv::Mat crop_image(const cv::Mat &img,
+                            const std::vector<float> &area) noexcept;
 
-        static cv::Mat crop_image(cv::Mat &img, const std::vector<int> &area);
-        static cv::Mat crop_image(cv::Mat &img, const std::vector<float> &area);
+  static void sort_boxes(std::vector<OCRPredictResult> &ocr_result) noexcept;
 
-        static void sorted_boxes(std::vector<OCRPredictResult> &ocr_result);
+  static std::vector<int>
+  xyxyxyxy2xyxy(const std::vector<std::vector<int>> &box) noexcept;
+  static std::vector<int> xyxyxyxy2xyxy(const std::vector<int> &box) noexcept;
 
-        static std::vector<int> xyxyxyxy2xyxy(std::vector<std::vector<int>> &box);
-        static std::vector<int> xyxyxyxy2xyxy(std::vector<int> &box);
+  static float fast_exp(float x) noexcept;
+  static std::vector<float>
+  activation_function_softmax(const std::vector<float> &src) noexcept;
+  static float iou(const std::vector<int> &box1,
+                   const std::vector<int> &box2) noexcept;
+  static float iou(const std::vector<float> &box1,
+                   const std::vector<float> &box2) noexcept;
 
-        static float fast_exp(float x);
-        static std::vector<float>
-        activation_function_softmax(std::vector<float> &src);
-        static float iou(std::vector<int> &box1, std::vector<int> &box2);
-        static float iou(std::vector<float> &box1, std::vector<float> &box2);
-
-    private:
-        static bool comparison_box(const OCRPredictResult &result1,
-                                   const OCRPredictResult &result2)
-        {
-            if (result1.box[0][1] < result2.box[0][1])
-            {
-                return true;
-            }
-            else if (result1.box[0][1] == result2.box[0][1])
-            {
-                return result1.box[0][0] < result2.box[0][0];
-            }
-            else
-            {
-                return false;
-            }
-        }
-    };
+private:
+  static bool comparison_box(const OCRPredictResult &result1,
+                             const OCRPredictResult &result2) noexcept {
+    if (result1.box[0][1] < result2.box[0][1]) {
+      return true;
+    } else if (result1.box[0][1] == result2.box[0][1]) {
+      return result1.box[0][0] < result2.box[0][0];
+    } else {
+      return false;
+    }
+  }
+};
 
 } // namespace PaddleOCR

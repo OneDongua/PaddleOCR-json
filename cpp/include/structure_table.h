@@ -14,11 +14,16 @@
 
 #pragma once
 
-#include "paddle_api.h"
-#include "paddle_inference_api.h"
-
+#include <fstream>
 #include <include/postprocess_op.h>
 #include <include/preprocess_op.h>
+#include <iostream>
+#include <memory>
+#include <yaml-cpp/yaml.h>
+
+namespace paddle_infer {
+class Predictor;
+}
 
 namespace PaddleOCR {
 
@@ -30,7 +35,7 @@ public:
       const bool &use_mkldnn, const std::string &label_path,
       const bool &use_tensorrt, const std::string &precision,
       const int &table_batch_num, const int &table_max_len,
-      const bool &merge_no_span_structure) {
+      const bool &merge_no_span_structure) noexcept {
     this->use_gpu_ = use_gpu;
     this->gpu_id_ = gpu_id;
     this->gpu_mem_ = gpu_mem;
@@ -41,18 +46,54 @@ public:
     this->table_batch_num_ = table_batch_num;
     this->table_max_len_ = table_max_len;
 
-    this->post_processor_.init(label_path, merge_no_span_structure);
+    std::string new_label_path = label_path;
+    std::string yaml_file_path = model_dir + "/inference.yml";
+    std::ifstream yaml_file(yaml_file_path);
+    if (yaml_file.is_open()) {
+      std::string model_name;
+      std::vector<std::string> rec_char_list;
+      try {
+        YAML::Node config = YAML::LoadFile(yaml_file_path);
+        if (config["Global"] && config["Global"]["model_name"]) {
+          model_name = config["Global"]["model_name"].as<std::string>();
+        }
+        if (!model_name.empty()) {
+          std::cerr << "Error: " << model_name << " is currently not supported."
+                    << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+        if (config["PostProcess"] && config["PostProcess"]["character_dict"]) {
+          rec_char_list = config["PostProcess"]["character_dict"]
+                              .as<std::vector<std::string>>();
+        }
+      } catch (const YAML::Exception &e) {
+        std::cerr << "Failed to load YAML file: " << e.what() << std::endl;
+      }
+      if (label_path == "../../ppocr/utils/ppocr_keys_v1.txt" &&
+          !rec_char_list.empty()) {
+        std::string new_rec_char_dict_path = model_dir + "/ppocr_keys.txt";
+        std::ofstream new_file(new_rec_char_dict_path);
+        if (new_file.is_open()) {
+          for (const auto &character : rec_char_list) {
+            new_file << character << '\n';
+          }
+          new_label_path = new_rec_char_dict_path;
+        }
+      }
+    }
+
+    this->post_processor_.init(new_label_path, merge_no_span_structure);
     LoadModel(model_dir);
   }
 
   // Load Paddle inference model
-  void LoadModel(const std::string &model_dir);
+  void LoadModel(const std::string &model_dir) noexcept;
 
-  void Run(std::vector<cv::Mat> img_list,
+  void Run(const std::vector<cv::Mat> &img_list,
            std::vector<std::vector<std::string>> &rec_html_tags,
            std::vector<float> &rec_scores,
            std::vector<std::vector<std::vector<int>>> &rec_boxes,
-           std::vector<double> &times);
+           std::vector<double> &times) noexcept;
 
 private:
   std::shared_ptr<paddle_infer::Predictor> predictor_;

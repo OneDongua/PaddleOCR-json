@@ -153,6 +153,7 @@ if (WIN32)
     if (WITH_STATIC_LIB)
         safe_set_static_flag()
         add_definitions(-DSTATIC_LIB)
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
     endif()
     message(STATUS "cmake c debug flags:" ${CMAKE_C_FLAGS_DEBUG})
     message(STATUS "cmake c release flags:" ${CMAKE_C_FLAGS_RELEASE})
@@ -207,6 +208,7 @@ include_directories("${PADDLE_LIB}/third_party/install/xxhash/include")
 include_directories("${PADDLE_LIB}/third_party/install/zlib/include")
 include_directories("${PADDLE_LIB}/third_party/install/onnxruntime/include")
 include_directories("${PADDLE_LIB}/third_party/install/paddle2onnx/include")
+include_directories("${PADDLE_LIB}/third_party/install/yaml-cpp/include")
 include_directories("${PADDLE_LIB}/third_party/boost")
 include_directories("${PADDLE_LIB}/third_party/eigen3")
 
@@ -223,9 +225,11 @@ link_directories("${PADDLE_LIB}/third_party/install/zlib/lib")
 
 link_directories("${PADDLE_LIB}/third_party/install/protobuf/lib")
 link_directories("${PADDLE_LIB}/third_party/install/glog/lib")
+link_directories("${PADDLE_LIB}/third_party/install/gflags/lib")
 link_directories("${PADDLE_LIB}/third_party/install/xxhash/lib")
 link_directories("${PADDLE_LIB}/third_party/install/onnxruntime/lib")
 link_directories("${PADDLE_LIB}/third_party/install/paddle2onnx/lib")
+link_directories("${PADDLE_LIB}/third_party/install/yaml-cpp/lib")
 link_directories("${PADDLE_LIB}/paddle/lib")
 
 
@@ -237,14 +241,15 @@ if(WITH_MKL)
     else ()
         set(MATH_LIB ${PADDLE_LIB}/third_party/install/mklml/lib/libmklml_intel${CMAKE_SHARED_LIBRARY_SUFFIX}
                     ${PADDLE_LIB}/third_party/install/mklml/lib/libiomp5${CMAKE_SHARED_LIBRARY_SUFFIX})
+    execute_process(COMMAND cp -r ${PADDLE_LIB}/third_party/install/mklml/lib/libmklml_intel${CMAKE_SHARED_LIBRARY_SUFFIX} /usr/lib)
     endif ()
-    set(MKLDNN_PATH "${PADDLE_LIB}/third_party/install/mkldnn")
+    set(MKLDNN_PATH "${PADDLE_LIB}/third_party/install/onednn")
     if(EXISTS ${MKLDNN_PATH})
         include_directories("${MKLDNN_PATH}/include")
         if (WIN32)
             set(MKLDNN_LIB ${MKLDNN_PATH}/lib/mkldnn.lib)
         else ()
-            set(MKLDNN_LIB ${MKLDNN_PATH}/lib/libmkldnn.so.0)
+            set(MKLDNN_LIB ${MKLDNN_PATH}/lib/libdnnl.so.3)
         endif ()
     endif()
     else()
@@ -267,7 +272,7 @@ if(WITH_STATIC_LIB)
 else()
     if(WIN32)
         set(DEPS
-            ${PADDLE_LIB}/paddle/lib/paddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
+            ${PADDLE_LIB}/paddle/lib/paddle_inference${CMAKE_SHARED_LIBRARY_SUFFIX})
     else()
         set(DEPS
             ${PADDLE_LIB}/paddle/lib/libpaddle_inference${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -288,7 +293,7 @@ if (NOT WIN32)
 else() # WIN32
     set(DEPS ${DEPS}
         ${MATH_LIB} ${MKLDNN_LIB}
-        glog gflags libprotobuf xxhash)
+        glog gflags_static libprotobuf xxhash)
     set(DEPS ${DEPS} libcmt shlwapi)
     if (EXISTS "${PADDLE_LIB}/third_party/install/snappy/lib")
         set(DEPS ${DEPS} snappy)
@@ -298,6 +303,9 @@ else() # WIN32
     endif()
 endif(NOT WIN32)
 
+if (EXISTS "${PADDLE_LIB}/third_party/install/yaml-cpp/lib")
+  set(DEPS ${DEPS} yaml-cpp)
+endif()
 
 if(WITH_GPU)
     if(NOT WIN32)
@@ -360,7 +368,7 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
         else ()
             set(CMAKE_INSTALL_PREFIX "/usr/" CACHE PATH "安装路径" FORCE)
         endif ()
-    
+
     # 其他跨平台编译
     else ()
         set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "安装路径" FORCE)

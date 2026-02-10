@@ -14,11 +14,16 @@
 
 #pragma once
 
-#include "paddle_api.h"
-#include "paddle_inference_api.h"
-
+#include <fstream>
 #include <include/preprocess_op.h>
 #include <include/utility.h>
+#include <iostream>
+#include <memory>
+#include <yaml-cpp/yaml.h>
+
+namespace paddle_infer {
+class Predictor;
+}
 
 namespace PaddleOCR {
 
@@ -29,7 +34,7 @@ public:
                       const int &cpu_math_library_num_threads,
                       const bool &use_mkldnn, const double &cls_thresh,
                       const bool &use_tensorrt, const std::string &precision,
-                      const int &cls_batch_num) {
+                      const int &cls_batch_num) noexcept {
     this->use_gpu_ = use_gpu;
     this->gpu_id_ = gpu_id;
     this->gpu_mem_ = gpu_mem;
@@ -41,15 +46,36 @@ public:
     this->precision_ = precision;
     this->cls_batch_num_ = cls_batch_num;
 
+    std::string yaml_file_path = model_dir + "/inference.yml";
+    std::ifstream yaml_file(yaml_file_path);
+    if (yaml_file.is_open()) {
+      std::string model_name;
+      try {
+        YAML::Node config = YAML::LoadFile(yaml_file_path);
+        if (config["Global"] && config["Global"]["model_name"]) {
+          model_name = config["Global"]["model_name"].as<std::string>();
+        }
+        if (!model_name.empty() &&
+            model_name != "PP-LCNet_x0_25_textline_ori" &&
+            model_name != "PP-LCNet_x1_0_textline_ori") {
+          std::cerr << "Error: " << model_name << " is currently not supported."
+                    << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+      } catch (const YAML::Exception &e) {
+        std::cerr << "Failed to load YAML file: " << e.what() << std::endl;
+      }
+    }
+
     LoadModel(model_dir);
   }
   double cls_thresh = 0.9;
 
   // Load Paddle inference model
-  void LoadModel(const std::string &model_dir);
+  void LoadModel(const std::string &model_dir) noexcept;
 
-  void Run(std::vector<cv::Mat> img_list, std::vector<int> &cls_labels,
-           std::vector<float> &cls_scores, std::vector<double> &times);
+  void Run(const std::vector<cv::Mat> &img_list, std::vector<int> &cls_labels,
+           std::vector<float> &cls_scores, std::vector<double> &times) noexcept;
 
 private:
   std::shared_ptr<paddle_infer::Predictor> predictor_;

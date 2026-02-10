@@ -13,15 +13,37 @@
 // limitations under the License.
 
 #include <include/ocr_det.h>
+#include <paddle_inference_api.h>
+
+#include <chrono>
+#include <numeric>
 
 namespace PaddleOCR {
 
-void DBDetector::LoadModel(const std::string &model_dir) {
+void DBDetector::LoadModel(const std::string &model_dir) noexcept {
   //   AnalysisConfig config;
   paddle_infer::Config config;
-  config.SetModel(model_dir + "/inference.pdmodel",
-                  model_dir + "/inference.pdiparams");
-
+  bool json_model = false;
+  std::string model_file_path, param_file_path;
+  std::vector<std::pair<std::string, std::string>> model_variants = {
+      {"/inference.json", "/inference.pdiparams"},
+      {"/model.json", "/model.pdiparams"},
+      {"/inference.pdmodel", "/inference.pdiparams"},
+      {"/model.pdmodel", "/model.pdiparams"}};
+  for (const auto &variant : model_variants) {
+    if (Utility::PathExists(model_dir + variant.first)) {
+      model_file_path = model_dir + variant.first;
+      param_file_path = model_dir + variant.second;
+      json_model = (variant.first.find(".json") != std::string::npos);
+      break;
+    }
+  }
+  if (model_file_path.empty()) {
+    std::cerr << "[ERROR] No valid model file found in " << model_dir
+              << std::endl;
+    exit(1);
+  }
+  config.SetModel(model_file_path, param_file_path);
   if (this->use_gpu_) {
     config.EnableUseGpu(this->gpu_mem_, this->gpu_id_);
     if (this->use_tensorrt_) {
@@ -45,8 +67,14 @@ void DBDetector::LoadModel(const std::string &model_dir) {
       config.EnableMKLDNN();
       // cache 10 different shapes for mkldnn to avoid memory leak
       config.SetMkldnnCacheCapacity(10);
+    } else {
+      config.DisableMKLDNN();
     }
     config.SetCpuMathLibraryNumThreads(this->cpu_math_library_num_threads_);
+    if (json_model) {
+      config.EnableNewIR();
+      config.EnableNewExecutor();
+    }
   }
   // use zero_copy_run as default
   config.SwitchUseFeedFetchOps(false);
@@ -56,14 +84,14 @@ void DBDetector::LoadModel(const std::string &model_dir) {
   config.SwitchIrOptim(true);
 
   config.EnableMemoryOptim();
-  config.DisableGlogInfo();
+  // config.DisableGlogInfo();
 
   this->predictor_ = paddle_infer::CreatePredictor(config);
 }
 
-void DBDetector::Run(cv::Mat &img,
+void DBDetector::Run(const cv::Mat &img,
                      std::vector<std::vector<std::vector<int>>> &boxes,
-                     std::vector<double> &times) {
+                     std::vector<double> &times) noexcept {
   float ratio_h{};
   float ratio_w{};
 
@@ -76,11 +104,11 @@ void DBDetector::Run(cv::Mat &img,
                        this->limit_side_len_, ratio_h, ratio_w,
                        this->use_tensorrt_);
 
-  this->normalize_op_.Run(&resize_img, this->mean_, this->scale_,
+  this->normalize_op_.Run(resize_img, this->mean_, this->scale_,
                           this->is_scale_);
 
   std::vector<float> input(1 * 3 * resize_img.rows * resize_img.cols, 0.0f);
-  this->permute_op_.Run(&resize_img, input.data());
+  this->permute_op_.Run(resize_img, input.data());
   auto preprocess_end = std::chrono::steady_clock::now();
 
   // Inference.
@@ -111,7 +139,7 @@ void DBDetector::Run(cv::Mat &img,
   std::vector<float> pred(n, 0.0);
   std::vector<unsigned char> cbuf(n, ' ');
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; ++i) {
     pred[i] = float(out_data[i]);
     cbuf[i] = (unsigned char)((out_data[i]) * 255);
   }
@@ -129,21 +157,21 @@ void DBDetector::Run(cv::Mat &img,
     cv::dilate(bit_map, bit_map, dila_ele);
   }
 
-  boxes = post_processor_.BoxesFromBitmap(
+  boxes = std::move(post_processor_.BoxesFromBitmap(
       pred_map, bit_map, this->det_db_box_thresh_, this->det_db_unclip_ratio_,
-      this->det_db_score_mode_);
+      this->det_db_score_mode_));
 
-  boxes = post_processor_.FilterTagDetRes(boxes, ratio_h, ratio_w, srcimg);
+  post_processor_.FilterTagDetRes(boxes, ratio_h, ratio_w, srcimg);
   auto postprocess_end = std::chrono::steady_clock::now();
 
   std::chrono::duration<float> preprocess_diff =
       preprocess_end - preprocess_start;
-  times.push_back(double(preprocess_diff.count() * 1000));
+  times.emplace_back(preprocess_diff.count() * 1000);
   std::chrono::duration<float> inference_diff = inference_end - inference_start;
-  times.push_back(double(inference_diff.count() * 1000));
+  times.emplace_back(inference_diff.count() * 1000);
   std::chrono::duration<float> postprocess_diff =
       postprocess_end - postprocess_start;
-  times.push_back(double(postprocess_diff.count() * 1000));
+  times.emplace_back(postprocess_diff.count() * 1000);
 }
 
 } // namespace PaddleOCR

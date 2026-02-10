@@ -14,6 +14,9 @@
 #include <arpa/inet.h>
 #endif
 
+#include <iostream>
+#include <opencv2/imgcodecs.hpp>
+
 namespace PaddleOCR
 {
     // ==================== 工具 ====================
