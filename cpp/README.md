@@ -155,10 +155,13 @@ PADDLE_LIB:
   - 常规 → 输出目录：`$(ProjectDir)\bin\Release`
   - 调试 → 命令：`$(ProjectDir)\bin\Release\PaddleOCR-json.exe`
   - 调试 → 工作目录：`$(ProjectDir)\bin\Release`
-- 解决方案管理器 → **PaddleOCR-json** → 右键 → 属性，进行修改：
-  - 常规 → 输出目录：`$(ProjectDir)\bin\Release`
+
 
 ![](docs/imgs/b6.png)
+
+- 解决方案管理器 → **PaddleOCR-json** → 右键 → 属性，进行修改：
+  - 常规 → 输出目录：`$(ProjectDir)\bin\Release`
+  - C/C++ → 命令行 → 其他选项末尾加入 `/utf-8`
 
 3. 按F5编译。如果输出类似 `生成：成功4个，失败0个……` 的语句，然后弹出一个控制台窗口，并报错 `找不到 opencv_world***.dll` ，那么**编译正常**。你能在 `build/bin/Release` 下找到生成的 `PaddleOCR-json.exe` 。
 

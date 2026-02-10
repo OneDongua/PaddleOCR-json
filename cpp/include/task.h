@@ -5,7 +5,6 @@
 #define TASK_H
 
 #include "include/nlohmann/json.hpp" // json库
-#include <opencv2/imgcodecs.hpp>
 
 namespace PaddleOCR
 {

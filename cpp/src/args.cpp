@@ -18,10 +18,10 @@
 
 #include <gflags/gflags.h>
 
-// ¹¤×÷Ä£Ê½
-DEFINE_string(image_path, "", "Set image_path to run a single task."); // ÈôÌîĞ´ÁËÍ¼Æ¬Â·¾¶£¬ÔòÖ´ĞĞÒ»´ÎOCR¡£
-DEFINE_int32(port, -1, "Set to 0 enable random port, set to 1~65535 enables specified port.");      // ÌîĞ´0Ëæ»ú¶Ë¿ÚºÅ£¬Ìî1^65535Ö¸¶¨¶Ë¿ÚºÅ¡£Ä¬ÈÏÔòÆôÓÃÄäÃû¹ÜµÀÄ£Ê½¡£
-DEFINE_string(addr, "loopback", "Socket server addr, the value can be 'loopback', 'localhost', 'any', or other IPv4 address."); // Ì×½Ó×Ö·şÎñÆ÷µÄµØÖ·Ä£Ê½£¬±¾µØ»·»Ø/ÈÎºÎ¿ÉÓÃ¡£ 
+// å·¥ä½œæ¨¡å¼
+DEFINE_string(image_path, "", "Set image_path to run a single task."); // è‹¥å¡«å†™äº†å›¾ç‰‡è·¯å¾„ï¼Œåˆ™æ‰§è¡Œä¸€æ¬¡OCRã€‚
+DEFINE_int32(port, -1, "Set to 0 enable random port, set to 1~65535 enables specified port.");      // å¡«å†™0éšæœºç«¯å£å·ï¼Œå¡«1^65535æŒ‡å®šç«¯å£å·ã€‚é»˜è®¤åˆ™å¯ç”¨åŒ¿åç®¡é“æ¨¡å¼ã€‚
+DEFINE_string(addr, "loopback", "Socket server addr, the value can be 'loopback', 'localhost', 'any', or other IPv4 address."); // å¥—æ¥å­—æœåŠ¡å™¨çš„åœ°å€æ¨¡å¼ï¼Œæœ¬åœ°ç¯å›/ä»»ä½•å¯ç”¨ã€‚ 
 
 // common args
 DEFINE_bool(use_gpu, false, "Inferring with GPU or CPU.");
@@ -37,9 +37,9 @@ DEFINE_string(image_dir, "", "Dir of input image.");
 DEFINE_string(
     type, "ocr",
     "Perform ocr or structure, the value is selected in ['ocr','structure'].");
-DEFINE_string(config_path, "", "Path of config file.");                                                // ÅäÖÃÎÄ¼şÂ·¾¶
-DEFINE_string(models_path, "", "Path of models folder.");                                              // Ô¤²â¿âÂ·¾¶
-DEFINE_bool(ensure_ascii, true, "Enable JSON ascii escape.");                                          // trueÊ±json¿ªÆôascii×ªÒå
+DEFINE_string(config_path, "", "Path of config file."); // é…ç½®æ–‡ä»¶è·¯å¾„
+DEFINE_string(models_path, "", "Path of models folder."); // é¢„æµ‹åº“è·¯å¾„
+DEFINE_bool(ensure_ascii, true, "Enable JSON ascii escape."); // trueæ—¶jsonå¼€å¯asciiè½¬ä¹‰
 
 // detection related
 DEFINE_string(det_model_dir, "", "Path of det inference model.");
@@ -88,7 +88,7 @@ DEFINE_bool(cls, false, "Whether use cls in forward.");
 DEFINE_bool(table, false, "Whether use table structure in forward.");
 DEFINE_bool(layout, false, "Whether use layout analysis in forward.");
 
-// ¼ì²éÒ»¸öÂ·¾¶pathÊÇ·ñ´æÔÚ£¬½«ĞÅÏ¢Ğ´Èëmsg
+// æ£€æŸ¥ä¸€ä¸ªè·¯å¾„pathæ˜¯å¦å­˜åœ¨ï¼Œå°†ä¿¡æ¯å†™å…¥msg
 void check_path(const std::string& path, const std::string& name, std::string& msg)
 {
     if (path.empty()) {
@@ -99,7 +99,7 @@ void check_path(const std::string& path, const std::string& name, std::string& m
     }
 }
 
-// Îª value Ç°ÖÃÆ´½ÓÔ¤²â¿âÂ·¾¶
+// ä¸º value å‰ç½®æ‹¼æ¥é¢„æµ‹åº“è·¯å¾„
 void prepend_models(const std::string& models_path_base, std::string& value)
 {
     if (PaddleOCR::Utility::str_starts_with(value, "models")) {
@@ -108,17 +108,17 @@ void prepend_models(const std::string& models_path_base, std::string& value)
     }
 }
 
-// ´ÓÅäÖÃÎÄ¼şÖĞ¶ÁÈ¡ÅäÖÃ£¬·µ»ØÈÕÖ¾×Ö·û´®¡£
+// ä»é…ç½®æ–‡ä»¶ä¸­è¯»å–é…ç½®ï¼Œè¿”å›æ—¥å¿—å­—ç¬¦ä¸²ã€‚
 std::string read_config()
 {
-    // ÉèÖÃÄ¬ÈÏÔ¤²â¿âÂ·¾¶
+    // è®¾ç½®é»˜è®¤é¢„æµ‹åº“è·¯å¾„
     std::string models_path_base = "models";
-    // Èç¹ûÊäÈëÕı³£Ô¤²â¿âÂ·¾¶²ÎÊı
+    // å¦‚æœè¾“å…¥æ­£å¸¸é¢„æµ‹åº“è·¯å¾„å‚æ•°
     if (!FLAGS_models_path.empty() && PaddleOCR::Utility::PathExists(FLAGS_models_path))
     {
-        // Ôò¸üĞÂÔ¤²â¿âÂ·¾¶
+        // åˆ™æ›´æ–°é¢„æµ‹åº“è·¯å¾„
         models_path_base = FLAGS_models_path;
-        // Ö®ºóÎÒÃÇ»áÓÃÕâ¸öÔ¤²â¿âÂ·¾¶À´¸üĞÂËùÓĞÆäËû²ÎÊıµÄÂ·¾¶
+        // ä¹‹åæˆ‘ä»¬ä¼šç”¨è¿™ä¸ªé¢„æµ‹åº“è·¯å¾„æ¥æ›´æ–°æ‰€æœ‰å…¶ä»–å‚æ•°çš„è·¯å¾„
     }
 
     if (!PaddleOCR::Utility::PathExists(FLAGS_config_path))
@@ -136,20 +136,20 @@ std::string read_config()
     while (getline(infile, line))
     {
         int length = line.length();
-        if (length < 3 || line[0] == '#') // Ìø¹ı¿ÕĞĞºÍ×¢ÊÍ
+        if (length < 3 || line[0] == '#') // è·³è¿‡ç©ºè¡Œå’Œæ³¨é‡Š
             continue;
-        int split = 0; // ¼üÖµ¶ÔµÄ·Ö¸îÏß
+        int split = 0; // é”®å€¼å¯¹çš„åˆ†å‰²çº¿
         for (; split < length; split++)
         {
             if (line[split] == ' ' || line[split] == '=')
                 break;
         }
-        if (split >= length - 1 || split == 0) // Ìø¹ı³¤¶È²»×ãµÄ¼üÖµ¶Ô
+        if (split >= length - 1 || split == 0) // è·³è¿‡é•¿åº¦ä¸è¶³çš„é”®å€¼å¯¹
             continue;
         std::string key = line.substr(0, split);
         std::string value = line.substr(split + 1);
         prepend_models(models_path_base, value);
-        // ÉèÖÃÅäÖÃ£¬ÓÅÏÈ¼¶µÍÓÚÃüÁîĞĞ´«Èë²ÎÊı¡£
+        // è®¾ç½®é…ç½®ï¼Œä¼˜å…ˆçº§ä½äºå‘½ä»¤è¡Œä¼ å…¥å‚æ•°ã€‚
         std::string res = google::SetCommandLineOptionWithMode(key.c_str(), value.c_str(), google::SET_FLAG_IF_DEFAULT);
         if (!res.empty())
         {
@@ -165,36 +165,36 @@ std::string read_config()
     return msg;
 }
 
-// ¼ì²â²ÎÊıºÏ·¨ĞÔ¡£³É¹¦·µ»Ø¿Õ×Ö·û´®£¬Ê§°Ü·µ»Ø±¨´íĞÅÏ¢×Ö·û´®¡£
+// æ£€æµ‹å‚æ•°åˆæ³•æ€§ã€‚æˆåŠŸè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œå¤±è´¥è¿”å›æŠ¥é”™ä¿¡æ¯å­—ç¬¦ä¸²ã€‚
 std::string check_flags() {
-    // ÉèÖÃÄ¬ÈÏÔ¤²â¿âÂ·¾¶
+    // è®¾ç½®é»˜è®¤é¢„æµ‹åº“è·¯å¾„
     std::string models_path_base = "models";
-    // Èç¹ûÊäÈëÕı³£Ô¤²â¿âÂ·¾¶²ÎÊı
+    // å¦‚æœè¾“å…¥æ­£å¸¸é¢„æµ‹åº“è·¯å¾„å‚æ•°
     if (!FLAGS_models_path.empty() && PaddleOCR::Utility::PathExists(FLAGS_models_path))
     {
-        // Ôò¸üĞÂÔ¤²â¿âÂ·¾¶
+        // åˆ™æ›´æ–°é¢„æµ‹åº“è·¯å¾„
         models_path_base = FLAGS_models_path;
-        // Ö®ºóÎÒÃÇ»áÓÃÕâ¸öÔ¤²â¿âÂ·¾¶À´¸üĞÂËùÓĞÆäËû²ÎÊıµÄÂ·¾¶
+        // ä¹‹åæˆ‘ä»¬ä¼šç”¨è¿™ä¸ªé¢„æµ‹åº“è·¯å¾„æ¥æ›´æ–°æ‰€æœ‰å…¶ä»–å‚æ•°çš„è·¯å¾„
     }
 
     std::string msg = "";
-    if (FLAGS_det) { // ¼ì²édet
+    if (FLAGS_det) { // æ£€æŸ¥det
         prepend_models(models_path_base, FLAGS_det_model_dir);
         check_path(FLAGS_det_model_dir, "det_model_dir", msg);
     }
-    if (FLAGS_rec) { // ¼ì²érec
+    if (FLAGS_rec) { // æ£€æŸ¥rec
         prepend_models(models_path_base, FLAGS_rec_model_dir);
         check_path(FLAGS_rec_model_dir, "rec_model_dir", msg);
     }
-    if (FLAGS_cls && FLAGS_use_angle_cls) { // ¼ì²écls
+    if (FLAGS_cls && FLAGS_use_angle_cls) { // æ£€æŸ¥cls
         prepend_models(models_path_base, FLAGS_cls_model_dir);
         check_path(FLAGS_cls_model_dir, "cls_model_dir", msg);
     }
-    if (!FLAGS_rec_char_dict_path.empty()) { // ¼ì²é rec_char_dict_path
+    if (!FLAGS_rec_char_dict_path.empty()) { // æ£€æŸ¥ rec_char_dict_path
         prepend_models(models_path_base, FLAGS_rec_char_dict_path);
         check_path(FLAGS_rec_char_dict_path, "rec_char_dict_path", msg);
     }
-    if (FLAGS_table) { // ¼ì²étable
+    if (FLAGS_table) { // æ£€æŸ¥table
         prepend_models(models_path_base, FLAGS_table_model_dir);
         check_path(FLAGS_table_model_dir, "table_model_dir", msg);
         if (!FLAGS_det)
@@ -202,14 +202,14 @@ std::string check_flags() {
         if (!FLAGS_rec)
             check_path(FLAGS_rec_model_dir, "rec_model_dir", msg);
     }
-    if (FLAGS_layout) { // ²¼¾Ö
+    if (FLAGS_layout) { // å¸ƒå±€
         prepend_models(models_path_base, FLAGS_layout_model_dir);
         check_path(FLAGS_layout_model_dir, "layout_model_dir", msg);
     }
-    if (!FLAGS_config_path.empty()) { // ÅäÖÃÎÄ¼şÄ¿Â¼·Ç¿ÕÊ±¼ì²é´æÔÚ 
+    if (!FLAGS_config_path.empty()) { // é…ç½®æ–‡ä»¶ç›®å½•éç©ºæ—¶æ£€æŸ¥å­˜åœ¨ 
         check_path(FLAGS_config_path, "config_path", msg);
     }
-    // ¼ì²éÃ¶¾ÙÖµ
+    // æ£€æŸ¥æšä¸¾å€¼
     if (FLAGS_precision != "fp32" && FLAGS_precision != "fp16" && FLAGS_precision != "int8") {
         msg += "precison should be 'fp32'(default), 'fp16' or 'int8', not " + FLAGS_precision + ". ";
     }

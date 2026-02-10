@@ -1,6 +1,7 @@
 > [!NOTE]
 > **本仓库修改内容见 [修改说明.md](/docs/修改说明.md)**
-> 
+>
+> 更新到 [PaddleOCR 3.1](https://github.com/PaddlePaddle/PaddleOCR/tree/release/3.1) 实现了对PP-OCRv5模型的适配  
 > 修改后仅在 Windows 平台下测试通过，其他平台暂未测试
 > 
 > 以下是原仓库 README

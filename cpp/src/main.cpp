@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// ∞Ê±æ–≈œ¢
-#define PROJECT_VER "v1.4.1-ext"
+// ÁâàÊú¨‰ø°ÊÅØ
+#define PROJECT_VER "v1.4.1-ext_1"
 #define PROJECT_NAME "PaddleOCR-json " PROJECT_VER
 
 #include <opencv2/core.hpp>
 
 #include <opencv2/imgcodecs.hpp>
-
-#include <include/args.h>
-#include <include/paddlestructure.h>
+#include <opencv2/imgproc.hpp>
 
 #include <iostream>
 #include <vector>
 
+#include <include/args.h>
 #include <include/paddleocr.h>
+#include <include/paddlestructure.h>
 #include <include/task.h>
 
 using namespace PaddleOCR;
@@ -88,18 +88,18 @@ void structure(std::vector<cv::String>& cv_all_img_names) {
 }
 
 int main(int argc, char** argv) {
-	std::cout << PROJECT_NAME << std::endl; // ∞Ê±æÃ· æ
-	// …Ë÷√gflags≤¢∂¡»°√¸¡Ó––
+	std::cout << PROJECT_NAME << std::endl; // ÁâàÊú¨ÊèêÁ§∫
+	// ËÆæÁΩÆgflagsÂπ∂ËØªÂèñÂëΩ‰ª§Ë°å
 	google::SetUsageMessage("PaddleOCR-json [FLAG1=ARG1] [FLAG2=ARG2]");
 	google::SetVersionString(PROJECT_VER);
 	google::ParseCommandLineFlags(&argc, &argv, true);
-	// ∂¡»°≈‰÷√Œƒº˛
+	// ËØªÂèñÈÖçÁΩÆÊñá‰ª∂
 	std::string configMsg = read_config();
 	if (!configMsg.empty())
 	{
 		std::cerr << configMsg << std::endl;
 	}
-	// ºÏ≤È≤Œ ˝∫œ∑®–‘
+	// Ê£ÄÊü•ÂèÇÊï∞ÂêàÊ≥ïÊÄß
 	std::string checkMsg = check_flags();
 	if (!checkMsg.empty())
 	{
@@ -107,13 +107,13 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	// ∆Ù∂Ø»ŒŒÒ
+	// ÂêØÂä®‰ªªÂä°
 	Task task = Task();
 	if (FLAGS_type == "ocr")
-	{ // OCRÕº∆¨ƒ£ Ω
+	{ // OCRÂõæÁâáÊ®°Âºè
 		return task.ocr();
 	}
-	// TODO: Õº±Ì ∂±ƒ£ Ω
+	// TODO: ÂõæË°®ËØÜÂà´Ê®°Âºè
 	else if (FLAGS_type == "structure")
 	{
 		std::cerr << "[ERROR] structure not support. " << std::endl;

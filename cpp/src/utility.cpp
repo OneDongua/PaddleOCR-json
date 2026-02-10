@@ -15,18 +15,16 @@
 #ifdef _WIN32
 #include <include/dirent.h>
 #include <direct.h>
-// ²»Í¬Æ½Ì¨µÄÂ·¾¶·Ö¸ô·û
+// ä¸åŒå¹³å°çš„è·¯å¾„åˆ†éš”ç¬¦
 #define SEP '\\'
 #else
 #include <dirent.h>
 #include <sys/stat.h>
-// ²»Í¬Æ½Ì¨µÄÂ·¾¶·Ö¸ô·û
+// ä¸åŒå¹³å°çš„è·¯å¾„åˆ†éš”ç¬¦
 #define SEP '/'
 #endif
 
-#include <dirent.h>
 #include <include/utility.h>
-#include <opencv2/imgcodecs.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -272,28 +270,28 @@ std::string Utility::basename(const std::string &filename) noexcept {
   return filename.substr(index + 1, len - index);
 }
 
-// Â·¾¶Æ´½Ó
+// è·¯å¾„æ‹¼æ¥
 std::string Utility::pathjoin(const std::string& parent, const std::string& child)
 {
-    // È¥µôÍ·Î²µÄ¿Õ¸ñ
+    // å»æ‰å¤´å°¾çš„ç©ºæ ¼
     std::string pstr = trim_copy(parent);
     std::string cstr = trim_copy(child);
 
-    // °Ñ child Í·²¿µÄÂ·¾¶·Ö¸ô·ûÈ¥µô
+    // æŠŠ child å¤´éƒ¨çš„è·¯å¾„åˆ†éš”ç¬¦å»æ‰
     if (cstr.front() == '/' || cstr.front() == '\\')
         cstr.assign(cstr.begin() + 1, cstr.end());
 
-    // ´¦ÀíÌØÊâÇé¿ö
+    // å¤„ç†ç‰¹æ®Šæƒ…å†µ
     if (pstr == "/" || pstr == "\\")
         return (SEP + cstr);
     else if (pstr.size() <= 0)
         return cstr;
 
-    // °Ñ parent Î²²¿µÄÂ·¾¶·Ö¸ô·ûÈ¥µô
+    // æŠŠ parent å°¾éƒ¨çš„è·¯å¾„åˆ†éš”ç¬¦å»æ‰
     if (pstr.back() == '/' || pstr.back() == '\\')
         pstr.assign(pstr.begin(), pstr.end() - 1);
 
-    // ×îºóÆ´½Ó
+    // æœ€åæ‹¼æ¥
     return (pstr + SEP + cstr);
 }
 

@@ -3,6 +3,7 @@
 
 #ifdef _WIN32
 
+#include <iostream>
 #include "include/paddleocr.h"
 #include "include/args.h"
 #include "include/task.h"
@@ -10,8 +11,6 @@
 #include <windows.h>
 // 编码转换
 #include <codecvt>
-#include <iostream>
-#include <opencv2/imgcodecs.hpp>
 std::wstring_convert<std::codecvt_utf8<wchar_t>> conv_Ustr_Wstr; // string utf-8 与 wstring utf-16 的双向转换器
 // 套接字 
 #pragma comment(lib, "ws2_32.lib")

@@ -1,6 +1,7 @@
 
 #include <exception>
 #include <regex>
+#include <iostream>
 
 #include "include/paddleocr.h"
 #include "include/args.h"
@@ -13,9 +14,6 @@
 #else // Linux, Mac
 #include <arpa/inet.h>
 #endif
-
-#include <iostream>
-#include <opencv2/imgcodecs.hpp>
 
 namespace PaddleOCR
 {
